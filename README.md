@@ -1,5 +1,9 @@
 # CelerPay
 
+[![CI](https://github.com/BrianAshihara/CelerPay/actions/workflows/ci.yml/badge.svg)](https://github.com/BrianAshihara/CelerPay/actions/workflows/ci.yml)
+[![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue.svg)](LICENSE)
+![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)
+
 Biblioteca C++23 de alta performance para pagamentos brasileiros. Faz parse, montagem e validação de PIX, boleto e CPF/CNPJ, e concilia cobranças esperadas com pagamentos recebidos (retorno CNAB, extrato OFX, PIX recebidos). Rápida, exata e sem dependências.
 
 ## Princípios
