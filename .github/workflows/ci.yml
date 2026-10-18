@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows MSVC
+            os: windows-2022
+            preset: windows-debug
+          - name: Windows MSVC shared
+            os: windows-2022
+            preset: windows-debug
+            shared: ON
+          - name: Ubuntu GCC 14
+            os: ubuntu-24.04
+            preset: linux-gcc-debug
+            cc: gcc-14
+            cxx: g++-14
+          - name: Ubuntu Clang 19 ASan UBSan
+            os: ubuntu-24.04
+            preset: linux-clang-asan
+            cc: clang-19
+            cxx: clang++-19
+            packages: clang-19
+            consumer_flags: -fsanitize=address,undefined
+          - name: macOS Apple Clang
+            os: macos-15
+            preset: macos-debug
+            cc: clang
+            cxx: clang++
+
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packages
+        if: matrix.packages
+        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.packages }}
+
+      - name: Install Ninja
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Read vcpkg baseline
+        id: baseline
+        shell: bash
+        run: echo "commit=$(jq -r '.["builtin-baseline"]' vcpkg.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup vcpkg
+        shell: bash
+        run: |
+          git clone https://github.com/microsoft/vcpkg "$VCPKG_ROOT"
+          git -C "$VCPKG_ROOT" checkout ${{ steps.baseline.outputs.commit }}
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          if [ "$RUNNER_OS" = "Windows" ]; then "$VCPKG_ROOT/bootstrap-vcpkg.bat" -disableMetrics; else "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics; fi
+
+      - name: Cache vcpkg binaries
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.name }}-${{ steps.baseline.outputs.commit }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Configure
+        shell: bash
+        run: |
+          EXTRA=""
+          if [ -n "$CXX" ]; then EXTRA="-DCMAKE_CXX_COMPILER=$CXX"; fi
+          cmake --preset ${{ matrix.preset }} -DCELERPAY_WARNINGS_AS_ERRORS=ON -DBUILD_SHARED_LIBS=${{ matrix.shared || 'OFF' }} $EXTRA
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }}
+
+      - name: Install
+        run: cmake --install build/${{ matrix.preset }}
+
+      - name: Consumer
+        shell: bash
+        run: |
+          EXTRA=""
+          if [ -n "$CXX" ]; then EXTRA="-DCMAKE_CXX_COMPILER=$CXX"; fi
+          cmake -S tests/consumer -B build/consumer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$PWD/install/${{ matrix.preset }}" -DCMAKE_CXX_FLAGS="${{ matrix.consumer_flags }}" $EXTRA
+          cmake --build build/consumer
+          export PATH="$PWD/install/${{ matrix.preset }}/bin:$PATH"
+          ./build/consumer/consumer
+
+  fuzz:
+    name: Fuzz (Clang 19, 60 s por alvo)
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang-19
+      CXX: clang++-19
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packages
+        run: sudo apt-get update && sudo apt-get install -y clang-19 libclang-rt-19-dev
+
+      - name: Setup vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg "$VCPKG_ROOT"
+          git -C "$VCPKG_ROOT" checkout "$(jq -r '.["builtin-baseline"]' vcpkg.json)"
+          "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
+
+      - name: Build
+        run: |
+          cmake --preset linux-fuzz -DCMAKE_CXX_COMPILER=clang++-19
+          cmake --build --preset linux-fuzz
+
+      - name: Run
+        run: |
+          for target in tlv pix boleto statement; do
+            mkdir -p "build/corpus-$target"
+            "build/linux-fuzz/fuzz/${target}_fuzz" "build/corpus-$target" "fuzz/corpus/$target" -max_total_time=60
+          done

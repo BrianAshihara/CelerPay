@@ -1,0 +1,13 @@
+find_package(benchmark CONFIG REQUIRED)
+
+add_executable(celerpay_bench main.cpp document_bench.cpp formats_bench.cpp reconcile_bench.cpp)
+target_include_directories(celerpay_bench PRIVATE ${PROJECT_SOURCE_DIR}/tests)
+celerpay_link_internals(celerpay_bench)
+target_link_libraries(celerpay_bench PRIVATE celerpay::celerpay celerpay_warnings benchmark::benchmark)
+if(CELERPAY_BUILD_QR)
+    target_link_libraries(celerpay_bench PRIVATE celerpay::qr)
+    target_compile_definitions(celerpay_bench PRIVATE CELERPAY_BENCH_QR)
+endif()
+if(MSVC)
+    target_compile_definitions(celerpay_bench PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()

@@ -1,0 +1,8 @@
+{
+  "name": "celerpay-bench-js",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@brazilian-utils/brazilian-utils": "2.5.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "celerpay",
+  "version": "0.1.0",
+  "description": "Biblioteca C++ de alta performance para pagamentos brasileiros: PIX, boleto, CPF/CNPJ e conciliação.",
+  "license": "MIT",
+  "builtin-baseline": "bf19794383e8fb95eba5aa553235bc8ec2271688",
+  "features": {
+    "tests": {
+      "description": "Testes unitários",
+      "dependencies": ["catch2", "nu-book-zxing-cpp"]
+    },
+    "bench": {
+      "description": "Benchmarks",
+      "dependencies": ["benchmark"]
+    }
+  }
+}
