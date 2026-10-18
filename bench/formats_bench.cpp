@@ -23,7 +23,7 @@ void boletoLine(benchmark::State& state) {
             benchmark::DoNotOptimize(boleto::parseLine(line));
         }
     }
-    state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * data.size()));
+    state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(data.size()));
 }
 
 void boletoBarcode(benchmark::State& state) {
@@ -36,7 +36,7 @@ void boletoBarcode(benchmark::State& state) {
             benchmark::DoNotOptimize(boleto::parseBarcode(barcode));
         }
     }
-    state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * barcodes.size()));
+    state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(barcodes.size()));
 }
 
 void pixParse(benchmark::State& state) {

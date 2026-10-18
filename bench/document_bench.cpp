@@ -19,7 +19,7 @@ void parseEach(benchmark::State& state, const vector<string>& data, Parse parse)
             benchmark::DoNotOptimize(parse(item));
         }
     }
-    state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * data.size()));
+    state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(data.size()));
 }
 
 template <class Doc, class Batch>
@@ -30,7 +30,7 @@ void parseAll(benchmark::State& state, const vector<string>& data, Batch batch) 
         benchmark::DoNotOptimize(batch(inputs, outputs));
         benchmark::ClobberMemory();
     }
-    state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * data.size()));
+    state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(data.size()));
 }
 
 void cpfSingle(benchmark::State& state) { parseEach(state, bench::cpfs(), parseCpf); }
@@ -61,7 +61,7 @@ void kernel(benchmark::State& state, const simd::Kernels* kernels) {
         kernels->documentSums(records.data(), data.size(), layout, sums.data());
         benchmark::ClobberMemory();
     }
-    state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * data.size()));
+    state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(data.size()));
 }
 
 const simd::Kernels* activeIfAvx2() {

@@ -23,7 +23,7 @@ void reconcileSynthetic(benchmark::State& state) {
     state.counters["charges"] = static_cast<double>(data.charges.size());
     state.counters["payments"] = static_cast<double>(data.payments.size());
     state.counters["matched_groups"] = static_cast<double>(matched);
-    state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * (data.charges.size() + data.payments.size())));
+    state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(data.charges.size() + data.payments.size()));
 }
 
 }

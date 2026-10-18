@@ -40,11 +40,11 @@ jobs:
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_DIR: ${{ github.workspace }}/vcpkg
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install packages
         if: matrix.packages
@@ -66,13 +66,14 @@ jobs:
       - name: Setup vcpkg
         shell: bash
         run: |
-          git clone https://github.com/microsoft/vcpkg "$VCPKG_ROOT"
-          git -C "$VCPKG_ROOT" checkout ${{ steps.baseline.outputs.commit }}
+          git clone https://github.com/microsoft/vcpkg "$VCPKG_DIR"
+          git -C "$VCPKG_DIR" checkout ${{ steps.baseline.outputs.commit }}
           mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
-          if [ "$RUNNER_OS" = "Windows" ]; then "$VCPKG_ROOT/bootstrap-vcpkg.bat" -disableMetrics; else "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics; fi
+          if [ "$RUNNER_OS" = "Windows" ]; then "$VCPKG_DIR/bootstrap-vcpkg.bat" -disableMetrics; else "$VCPKG_DIR/bootstrap-vcpkg.sh" -disableMetrics; fi
+          echo "VCPKG_ROOT=$VCPKG_DIR" >> "$GITHUB_ENV"
 
       - name: Cache vcpkg binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-${{ matrix.name }}-${{ steps.baseline.outputs.commit }}-${{ hashFiles('vcpkg.json') }}
@@ -111,7 +112,7 @@ jobs:
       CXX: clang++-19
       VCPKG_ROOT: ${{ github.workspace }}/vcpkg
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install packages
         run: sudo apt-get update && sudo apt-get install -y clang-19 libclang-rt-19-dev
